@@ -33,8 +33,9 @@ void drawHome() {
 
 void drawInput() {
   textAlign(CENTER, CENTER);
+  textSize(30);
   text("筋トレの記録を入力", width/2, height/2);
-  // ここに入力欄のUIを後で追加
+  入力する渡辺
 }
 
 void drawGame() {
