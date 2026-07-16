@@ -1,191 +1,218 @@
-// ボール1
-float x1 = 200;
-float y1 = 150;
-float dx1 = 7;
-float dy1 = 7;
+final int STATE_PLAYING = 0;
+final int STATE_WIN     = 1;
+final int STATE_LOSE    = 2;
+int gameState = STATE_PLAYING;
 
-// ボール2
-float x2 = 100;
-float y2 = 50;
-float dx2 = -5;
-float dy2 = 5;
+Player player;
+Enemy enemy;
+ArrayList<Obstacle> obstacles;
 
-// 半径
-float r = 20;
+// ---- 経験値 → 攻撃力 ----
+// playerExp は「別のところ」（レベル管理システムなど）から渡ってくる想定の値。
+// 今回はダミーとして "playerdata.json" というファイルから読み込む実装にしている。
+int playerExp = 0;
+final int EXP_PER_LEVEL     = 100; // このEXPごとにレベルが1上がる
+final float BASE_ATTACK     = 5;   // Lv.1時点の攻撃力
+final float ATTACK_PER_LEVEL = 3;  // レベル1につき攻撃力+3
 
-// 最大HP
-float maxHp = 1000;
-
-// 現在HP
-float hp1 = 800;
-float maxhp1 = hp1;
-float hp2 = 600;
-float maxhp2 = hp2;
-
-// 攻撃力
-float at1 = 100;
-float at2 = 4;
-
-// バーの最大幅
-float barWidth = 150;
-
-// 接触判定
-boolean hit = false;
-
-// エフェクト
-float effectX;
-float effectY;
-int hitTimer = 0;
+// ---- 撃破するたびに敵が強くなる永続データ ----
+final String SAVE_FILE = "savedata.json"; // 勝利数を保存するファイル
+int winCount = 0;                   // 通算で敵を倒した回数（ファイルに保存・復元）
+final float BASE_ENEMY_HEALTH    = 100; // 1体目の敵の体力
+final float ENEMY_HEALTH_PER_WIN = 20;  // 1勝するごとに次の敵の体力が+20
 
 void setup() {
-  size(500, 400);
-  textSize(14);
+  size(800, 600);
+
+  loadGameData();              // winCount をファイルから読み込む
+  playerExp = loadPlayerExp(); // 経験値を読み込む（外部連携部分）
+
+  float attackPower = calcAttackPower(playerExp);
+  float enemyHealth = calcEnemyHealth(winCount);
+
+  // 敵キャラ：x, y, 半径, 体力（winCountに応じて自動計算）
+  enemy = new Enemy(width / 2, height / 2, 40, enemyHealth);
+
+  // プレイヤー：x, y, 半径, ライフ, 攻撃力（経験値から自動計算）
+  player = new Player(60, height - 60, 15, 3, attackPower);
+
+  // 障害物を複数、軌道半径・速度・初期角度を変えて配置
+  obstacles = new ArrayList<Obstacle>();
+  obstacles.add(new Obstacle(enemy.x, enemy.y, 120,  0.015, 0));
+  obstacles.add(new Obstacle(enemy.x, enemy.y, 120,  0.015, PI));
+  obstacles.add(new Obstacle(enemy.x, enemy.y, 180, -0.010, HALF_PI));
+  obstacles.add(new Obstacle(enemy.x, enemy.y, 180, -0.010, HALF_PI + PI));
+  obstacles.add(new Obstacle(enemy.x, enemy.y, 240,  0.008, 0));
+}
+
+// ---- 経験値から攻撃力を計算 ----
+float calcAttackPower(int exp) {
+  int level = exp / EXP_PER_LEVEL;
+  return BASE_ATTACK + level * ATTACK_PER_LEVEL;
+}
+
+// ---- 通算勝利数から敵の最大体力を計算 ----
+float calcEnemyHealth(int wins) {
+  return BASE_ENEMY_HEALTH + wins * ENEMY_HEALTH_PER_WIN;
+}
+
+// ---- 経験値の読み込み（外部システム連携用のダミー実装） ----
+int loadPlayerExp() {
+  // ★ここを、実際に経験値を管理している別プログラム／DB／APIなどから
+  //   値を受け取る処理に置き換える。
+  //   例）ネットワーク経由でAPIを叩く、共有DBを参照する、等。
+  JSONObject data = loadJSONObject("playerdata.json");
+  if (data != null) {
+    return data.getInt("exp", 0);
+  }
+  return 0; // ファイルが無い・読み込めない場合は経験値0として扱う
+}
+
+// ---- 勝利数（敵の強さ）の読み込み・保存 ----
+void loadGameData() {
+  JSONObject data = loadJSONObject(SAVE_FILE);
+  if (data != null) {
+    winCount = data.getInt("winCount", 0);
+  }
+}
+
+void saveGameData() {
+  JSONObject data = new JSONObject();
+  data.setInt("winCount", winCount);
+  saveJSONObject(data, SAVE_FILE);
 }
 
 void draw() {
-  background(255);
+  background(30);
 
-  // -------------------------
-  // ボール移動
-  // -------------------------
-  if (hp1 > 0) {
-    x1 += dx1;
-    y1 += dy1;
+  if (gameState == STATE_PLAYING) {
+    updateGame();
   }
 
-  if (hp2 > 0) {
-    x2 += dx2;
-    y2 += dy2;
+  drawGame();
+
+  if (gameState == STATE_WIN) {
+    drawEndMessage("YOU WIN!", color(80, 220, 120));
+  } else if (gameState == STATE_LOSE) {
+    drawEndMessage("GAME OVER", color(220, 80, 80));
+  }
+}
+
+// ---- 更新処理 ----
+void updateGame() {
+  player.handleInput();
+  player.update();
+
+  for (Obstacle o : obstacles) {
+    o.update();
   }
 
-  // -------------------------
-  // 壁で反射
-  // -------------------------
-  if (hp1 > 0) {
-    if (x1 - r <= 0 || x1 + r >= width) dx1 = -dx1;
-    if (y1 - r <= 0 || y1 + r >= height - 50) dy1 = -dy1;
-  }
-
-  if (hp2 > 0) {
-    if (x2 - r <= 0 || x2 + r >= width) dx2 = -dx2;
-    if (y2 - r <= 0 || y2 + r >= height - 50) dy2 = -dy2;
-  }
-
-  // -------------------------
-  // 接触判定
-  // -------------------------
-  if (hp1 > 0 && hp2 > 0) {
-
-    float d = dist(x1, y1, x2, y2);
-
-    if (d <= r * 2) {
-
-      if (!hit) {
-
-        hp1 -= at2;
-        hp2 -= at1;
-
-        hp1 = max(hp1, 0);
-        hp2 = max(hp2, 0);
-
-        // エフェクト
-        effectX = (x1 + x2) / 2;
-        effectY = (y1 + y2) / 2;
-        hitTimer = 10;
-
-        hit = true;
-      }
-
-    } else {
-      hit = false;
+  // 障害物との当たり判定
+  for (Obstacle o : obstacles) {
+    if (player.checkCollision(o)) {
+      onPlayerHitObstacle();
+      break;
     }
   }
 
-  // -------------------------
-  // ボール描画
-  // -------------------------
-  if (hp1 > 0) {
-    fill(255, 0, 0);
-    ellipse(x1, y1, r * 2, r * 2);
+  // 敵との当たり判定（体当たり）
+  if (player.checkCollision(enemy)) {
+    onPlayerHitEnemy();
   }
+}
 
-  if (hp2 > 0) {
-    fill(0, 0, 255);
-    ellipse(x2, y2, r * 2, r * 2);
+// ---- 描画処理 ----
+void drawGame() {
+  enemy.display();
+  for (Obstacle o : obstacles) {
+    o.display();
   }
+  player.display();
 
-  // -------------------------
-  // ヒットエフェクト
-  // -------------------------
-  if (hitTimer > 0) {
+  drawUI();
+}
 
-    noStroke();
+// ---- イベント処理 ----
+void onPlayerHitObstacle() {
+  player.loseLife();
+  player.resetPosition();
 
-    fill(255, 255, 0, 180);
-    ellipse(effectX, effectY, 50, 50);
-
-    fill(255, 150, 0, 220);
-    ellipse(effectX, effectY, 30, 30);
-
-    fill(255);
-    ellipse(effectX, effectY, 10, 10);
-
-    hitTimer--;
+  if (player.lives <= 0) {
+    gameState = STATE_LOSE;
   }
+}
 
-  // -------------------------
-  // Player1
-  // -------------------------
-  fill(0);
-  textAlign(LEFT);
-  text("Player1  ATK:" + (int)at1, 20, height - 35);
+void onPlayerHitEnemy() {
+  enemy.takeDamage(player.attackPower);
+  player.resetPosition();
 
-  stroke(0);
+  if (enemy.health <= 0) {
+    gameState = STATE_WIN;
+    winCount++;        // 撃破回数を+1
+    saveGameData();    // ファイルに保存 → 次回はこの分だけ敵が強くなる
+  }
+}
+
+// ---- UI ----
+void drawUI() {
+  fill(255);
+  textSize(18);
+  textAlign(LEFT, TOP);
+  text("LIFE: " + player.lives, 20, 20);
+  text("Lv." + (playerExp / EXP_PER_LEVEL) + "  ATK: " + nf(player.attackPower, 0, 1), 20, 44);
+  text("WIN: " + winCount, 20, 68);
+
+  float barW = 300;
+  float barH = 20;
+  float bx = width / 2 - barW / 2;
+  float by = 20;
+  float ratio = constrain(enemy.health / (float) enemy.maxHealth, 0, 1);
+
   noFill();
-  rect(20, height - 25, barWidth, 15);
-
+  stroke(255);
+  rect(bx, by, barW, barH);
   noStroke();
-  fill(0, 255, 0);
-  rect(20, height - 25, hp1 / maxHp * barWidth, 15);
+  fill(220, 80, 80);
+  rect(bx, by, barW * ratio, barH);
 
-  fill(0);
-  text((int)hp1 + " / " + (int)maxhp1, 20, height - 5);
+  fill(255);
+  textAlign(CENTER, TOP);
+  text("ENEMY HP", width / 2, by + barH + 4);
+}
 
-  // -------------------------
-  // Player2
-  // -------------------------
-  fill(0);
-  text("Player2  ATK:" + (int)at2, width - 170, height - 35);
+void drawEndMessage(String msg, color c) {
+  fill(0, 180);
+  rect(0, 0, width, height);
 
-  stroke(0);
-  noFill();
-  rect(width - 170, height - 25, barWidth, 15);
+  fill(c);
+  textSize(48);
+  textAlign(CENTER, CENTER);
+  text(msg, width / 2, height / 2 - 20);
 
-  noStroke();
-  fill(0, 255, 0);
-  rect(width - 170, height - 25, hp2 / maxHp * barWidth, 15);
+  fill(255);
+  textSize(18);
+  text("press [R] to restart", width / 2, height / 2 + 30);
+}
 
-  fill(0);
-  text((int)hp2 + " / " + (int)maxhp2, width - 170, height - 5);
-
-  // -------------------------
-  // 勝者表示
-  // -------------------------
-  fill(0);
-  textAlign(CENTER);
-  textSize(30);
-
-  if (hp1 <= 0 && hp2 > 0) {
-    text("Player2 WIN!", width / 2, 30);
+// ---- 入力 ----
+void keyPressed() {
+  if (gameState == STATE_PLAYING) {
+    player.setKey(keyCode, true);
   }
 
-  if (hp2 <= 0 && hp1 > 0) {
-    text("Player1 WIN!", width / 2, 30);
+  if ((gameState == STATE_WIN || gameState == STATE_LOSE) && (key == 'r' || key == 'R')) {
+    restartGame();
   }
+}
 
-  if (hp1 <= 0 && hp2 <= 0) {
-    text("DRAW!", width / 2, 30);
-  }
+void keyReleased() {
+  player.setKey(keyCode, false);
+}
 
-  textSize(14);
+void restartGame() {
+  gameState = STATE_PLAYING;
+  enemy.maxHealth = calcEnemyHealth(winCount); // 勝利数に応じて敵を強化
+  enemy.health = enemy.maxHealth;
+  player.lives = player.maxLives;
+  player.resetPosition();
 }

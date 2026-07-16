@@ -1,0 +1,71 @@
+クラス名
+battle
+主担当者名
+
+浅野 瞬
+
+属性（変数）一覧
+属性名	型	内容
+x1	float	Player1のX座標
+y1	float	Player1のY座標
+dx1	float	Player1のX方向の移動量
+dy1	float	Player1のY方向の移動量
+x2	float	Player2のX座標
+y2	float	Player2のY座標
+dx2	float	Player2のX方向の移動量
+dy2	float	Player2のY方向の移動量
+r	float	ボールの半径
+maxHp	float	最大HPの基準値
+hp1	float	Player1の現在HP
+maxhp1	float	Player1の初期HP（最大HP表示用）
+hp2	float	Player2の現在HP
+maxhp2	float	Player2の初期HP（最大HP表示用）
+at1	float	Player1の攻撃力
+at2	float	Player2の攻撃力
+barWidth	float	HPバーの最大幅
+hit	boolean	接触中かどうかを判定するフラグ
+effectX	float	ヒットエフェクトのX座標
+effectY	float	ヒットエフェクトのY座標
+hitTimer	int	エフェクト表示時間
+メソッド一覧
+メソッド名	戻り値	内容
+setup()	void	初期設定を行う
+draw()	void	ゲーム画面の更新・描画を繰り返す
+各属性・各メソッドの内容に関するメモ
+属性
+x1, y1, x2, y2
+各プレイヤー（球）の現在位置を保持する。
+dx1, dy1, dx2, dy2
+各プレイヤーの移動方向・速度を表す。
+r
+球の半径。衝突判定や描画で使用する。
+maxHp
+HPバーの基準となる最大HP。
+hp1, hp2
+現在のHP。攻撃を受けるたびに減少する。
+maxhp1, maxhp2
+ゲーム開始時のHPを保存し、HPバーや「現在HP／最大HP」の表示に利用する。
+at1, at2
+接触時に相手へ与えるダメージ量。
+barWidth
+HPバーの横幅（満タン時の長さ）。
+hit
+球が接触している間、ダメージを一度だけ与えるためのフラグ。
+effectX, effectY
+接触時に表示するエフェクトの座標。
+hitTimer
+エフェクトを一定時間だけ表示するためのタイマー。
+メソッド
+setup()
+ウィンドウサイズや文字サイズなど、ゲーム開始時に一度だけ必要な初期設定を行う。
+draw()
+毎フレーム呼び出されるメソッド。
+プレイヤーの移動
+壁との衝突判定
+プレイヤー同士の接触判定
+HPの減少
+ヒットエフェクトの表示
+プレイヤー・HPバー・攻撃力の描画
+勝敗判定と勝者表示
+
+など、ゲーム全体の処理を担当している。
