@@ -1,84 +1,68 @@
-// =====================================================
-// GameObject / Character / Player
-// =====================================================
-// 画像が未確定なので、displayは今のところ ellipse のプレースホルダー。
-// 後で PImage を使う形に差し替える想定(imgフィールドはコメントアウトで用意だけしておく)。
-
-class GameObject {
-  float x, y, size;
-  // PImage img; // 画像を使う場合はここに追加
-
-  GameObject(float x, float y, float size) {
-    this.x = x;
-    this.y = y;
-    this.size = size;
-  }
-
-  boolean hit(GameObject other) {
-    float d = dist(x, y, other.x, other.y);
-    return d < (this.size/2 + other.size/2);
-  }
-}
-
-class Character extends GameObject {
-  int hp, maxHp, attack;
-
-  Character(float x, float y, float size, int maxHp, int attack) {
-    super(x, y, size);
-    this.maxHp = maxHp;
-    this.hp = maxHp;
-    this.attack = attack;
-  }
-
-  boolean isDead() {
-    return hp <= 0;
-  }
-}
-
-class Player extends Character {
-  float exp;
-  int defeatedCount = 0;
+class Player extends Entity {
+  final int EXP_PER_LEVEL = 100;
+  final float BASE_ATTACK = 5;
+  final float ATTACK_PER_LEVEL = 3;
+  int lives;
+  int maxLives;
+  float attackPower;
+  float speed = 4;
   float startX, startY;
+  boolean up, down, left, right;
+  float exp = 0;
+  PImage[] images;
 
-  Player(float x, float y, float size, float startExp) {
-    // hp, attack はexpから計算するので、いったん仮の値でsuper()を呼ぶ
-    super(x, y, size, 100, 10);
-    exp = startExp;
-    startX = x;
-    startY = y;
+  Player(float x, float y, float r, int lives, float attackPower) {
+    super(x, y, r);
+    this.lives = lives;
+    this.maxLives = lives;
+    this.attackPower = attackPower;
+    this.startX = x;
+    this.startY = y;
+  }
+
+  // 元のapp.pdeからそのまま呼べる形
+  Player(float x, float y, float r, PImage image, float exp) {
+    this(x, y, r, 3, 5);
+    this.exp = exp;
+    this.images = new PImage[5];
+    this.images[0] = image;
     updateStats();
   }
 
-  void move(float mx, float my) {
-    x = mx;
-    y = my;
+  void setImages(PImage[] images) { this.images = images; }
+  int getLevel() { return int(exp / EXP_PER_LEVEL) + 1; }
+  void addExp(float gainedExp) { exp += gainedExp; updateStats(); }
+  void updateStats() { attackPower = BASE_ATTACK + int(exp / EXP_PER_LEVEL) * ATTACK_PER_LEVEL; }
+
+  void setKey(int code, boolean pressed) {
+    if (code == UP) up = pressed;
+    if (code == DOWN) down = pressed;
+    if (code == LEFT) left = pressed;
+    if (code == RIGHT) right = pressed;
   }
 
-  void reset() {
-    x = startX;
-    y = startY;
+  void handleInput() {
+    float dx = 0, dy = 0;
+    if (up) dy--;
+    if (down) dy++;
+    if (left) dx--;
+    if (right) dx++;
+    if (dx != 0 || dy != 0) {
+      float len = sqrt(dx * dx + dy * dy);
+      x += dx / len * speed;
+      y += dy / len * speed;
+    }
+    x = constrain(x, r, width - r);
+    y = constrain(y, r, height - r);
   }
 
-  void add(float gainedExp) {
-    exp += gainedExp;
-    updateStats();
-  }
-
-  // expから hp, maxHp, attack を再計算する(計算式は仮)
-  void updateStats() {
-    maxHp = int(100 + exp * 0.5);
-    attack = int(10 + exp * 0.1);
-    hp = maxHp;
-  }
-
+  @Override
   void display() {
-    // exp が大きいほど色が濃く、サイズが大きくなるプレースホルダー
-    float t = constrain(exp / 500.0, 0, 1); // 0〜1に正規化(仮の上限500)
-    float displaySize = size + t * 30;
-    color c = lerpColor(color(150, 200, 255), color(255, 120, 60), t);
-
-    noStroke();
-    fill(c);
-    ellipse(x, y, displaySize, displaySize);
+    int imageIndex = constrain(getLevel() - 1, 0, 4);
+    if (images != null && images[imageIndex] != null) image(images[imageIndex], x-r, y-r, r*2, r*2);
+    else { fill(80, 160, 255); noStroke(); ellipse(x, y, r * 2, r * 2); }
   }
+
+  void loseLife() { lives--; }
+  void resetPosition() { x = startX; y = startY; }
 }
