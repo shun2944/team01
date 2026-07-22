@@ -1,5 +1,5 @@
 class Player extends Entity {
-  final int EXP_PER_LEVEL = 100;
+  final int EXP_PER_LEVEL = 1000;
   final float BASE_ATTACK = 5;
   final float ATTACK_PER_LEVEL = 3;
   int lives;
