@@ -13,8 +13,15 @@ float btnInputX, btnInputY, btnInputW = 220, btnInputH = 50;
 float btnGameX, btnGameY, btnGameW = 220, btnGameH = 50;
 // プレイヤーの画像
 PImage[] playerImages;
+PImage enemyImg;
+PImage obstacleImg;
+
 void setup() {
   size(600, 500);
+   enemyImg = loadImage("enemy.png");
+   obstacleImg = loadImage("obstacle.png");
+
+   println(enemyImg);
   textAlign(CENTER, CENTER);
   playerImages = new PImage[5];
   playerImages[0] = loadImage("level1.png");
@@ -23,9 +30,9 @@ void setup() {
   playerImages[3] = loadImage("level4.png");
   playerImages[4] = loadImage("level5.png");
   // Playerのコンストラクタ名を、元のapp.pdeに合わせている
-  player = new Player(width/2, height - 150, 15, playerImages[0], 0);
+  player = new Player(80, height - 80, 15, playerImages[0], 0);
   player.setImages(playerImages);
-  battle = new Battle(player, 100);
+  battle = new Battle(player, 100, enemyImg, obstacleImg);
   enemy = battle.enemy;
   inputScreen = new Input();
   btnInputX = width/2 - btnInputW/2;
@@ -51,13 +58,28 @@ void drawHome() {
   fill(30);
   textSize(24);
   text("grow up game", width/2, 50);
+
+  // 現在の座標を保存
+  float oldX = player.x;
+  float oldY = player.y;
+
+  // ホーム画面で表示したい位置
+  player.x = width/2;
+  player.y = 120;
+
   player.display();
+
+  // 元の座標に戻す
+  player.x = oldX;
+  player.y = oldY;
+
   fill(30);
   textSize(16);
   text("EXP: " + nf(player.exp, 0, 1), width/2, 200);
   text("HP: " + player.lives + " / " + player.maxLives, width/2, 225);
   text("ATK: " + player.attackPower, width/2, 250);
   text("TIME: " + battle.getWinCount(), width/2, 275);
+
   drawButton(btnInputX, btnInputY, btnInputW, btnInputH, "grow up");
   drawButton(btnGameX, btnGameY, btnGameW, btnGameH, "game");
 }
@@ -86,7 +108,7 @@ void drawInput() {
 void drawGame() {
   battle.display();
   if (battle.consumeSaveRequest()) save();
-  drawButton(width/2 - 100, height/2 + 130, 200, 44, "Home");
+drawButton(width - 90, 20, 70, 30, "Home");
 }
 void add(float gainedExp) {
   player.addExp(gainedExp);
@@ -106,10 +128,11 @@ void mousePressed() {
       gameState = GAME;
     }
   } else if (gameState == INPUT || gameState == GAME) {
-    if (isInside(mouseX, mouseY, width/2 - 100, height/2 + 130, 200, 44)) {
-      inputScreen.reset();
-      gameState = HOME;
-    } else if (gameState == INPUT) {
+   if (isInside(mouseX, mouseY, width - 90, 20, 70, 30)) {
+    inputScreen.reset();
+    gameState = HOME;
+}
+    else if (gameState == INPUT) {
       inputScreen.handleMouse(mouseX, mouseY);
     }
   }

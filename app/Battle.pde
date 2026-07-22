@@ -7,25 +7,32 @@ class Battle {
 
   Player player;
   Enemy enemy;
+  PImage enemyImg;
+  PImage obstacleImg;
+
+  
   ArrayList<Obstacle> obstacles;
   int state = PLAYING;
   int winCount;
   boolean saveRequested = false;
 
-  Battle(Player player, float savedEnemyMaxHp) {
+  Battle(Player player, float savedEnemyMaxHp, PImage enemyImg,PImage obstacleImg) {
     this.player = player;
+    this.enemyImg = enemyImg;
+    this.obstacleImg = obstacleImg;
+
     winCount = max(0, round((savedEnemyMaxHp - BASE_ENEMY_HEALTH) / ENEMY_HEALTH_PER_WIN));
     createEnemy();
   }
 
   void createEnemy() {
-    enemy = new Enemy(width/2, height/2, 40, getNextEnemyMaxHp());
+    enemy = new Enemy(width/2, height/2, 40, getNextEnemyMaxHp(),enemyImg);
     obstacles = new ArrayList<Obstacle>();
-    obstacles.add(new Obstacle(enemy.x, enemy.y, 120, 0.015, 0));
-    obstacles.add(new Obstacle(enemy.x, enemy.y, 120, 0.015, PI));
-    obstacles.add(new Obstacle(enemy.x, enemy.y, 180, -0.010, HALF_PI));
-    obstacles.add(new Obstacle(enemy.x, enemy.y, 180, -0.010, HALF_PI + PI));
-    obstacles.add(new Obstacle(enemy.x, enemy.y, 240, 0.008, 0));
+    obstacles.add(new Obstacle(enemy.x, enemy.y, 120, 0.015, 0, obstacleImg));
+    obstacles.add(new Obstacle(enemy.x, enemy.y, 120, 0.015, PI, obstacleImg));
+    obstacles.add(new Obstacle(enemy.x, enemy.y, 180, -0.010, HALF_PI, obstacleImg));
+    obstacles.add(new Obstacle(enemy.x, enemy.y, 180, -0.010, HALF_PI + PI, obstacleImg));
+    obstacles.add(new Obstacle(enemy.x, enemy.y, 240, 0.008, 0, obstacleImg));
   }
 
   void start() {
@@ -40,7 +47,6 @@ class Battle {
   void display() {
     background(30);
     if (state == PLAYING) update();
-
     enemy.display();
     for (Obstacle obstacle : obstacles) obstacle.display();
     player.display();
