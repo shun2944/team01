@@ -103,7 +103,8 @@ void drawInput() {
     player.addExp(gainedExp);
     save();
   }
-  drawButton(width/2 - 100, height/2 + 130, 200, 44, "Home");
+drawButton(width - 90, 20, 70, 30, "Home");
+
 }
 void drawGame() {
   battle.display();
