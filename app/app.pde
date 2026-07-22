@@ -8,6 +8,7 @@ Player player;
 Enemy enemy;
 Battle battle;
 Input inputScreen;
+PFont jp;
 // ----- Home画面のボタン領域 -----
 float btnInputX, btnInputY, btnInputW = 220, btnInputH = 50;
 float btnGameX, btnGameY, btnGameW = 220, btnGameH = 50;
@@ -18,6 +19,8 @@ PImage obstacleImg;
 
 void setup() {
   size(600, 500);
+  jp = createFont("MS Gothic", 28);
+  textFont(jp);
    enemyImg = loadImage("enemy.png");
    obstacleImg = loadImage("obstacle.png");
 
